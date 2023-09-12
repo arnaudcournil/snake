@@ -1,12 +1,9 @@
 import numpy as np
-import numba as nb
 import os
 
 width = 10
 height = 10
 max_depth = 10
-
-snake = [(0, 2), (0, 1), (0, 0)]
 
 meanScore = 0
 bestScore = 0
@@ -43,23 +40,6 @@ def get_possible_moves(snake):
         if move not in snake and 0 <= move[0] < width and 0 <= move[1] < height:
             yield move
 
-"""
-def minimin(snake, apple, depth = 10, nb_moves = 1, min_act = 1000):
-    if snake[0][0] == apple[0] and snake[0][1] == apple[1]:
-        return nb_moves
-    if nb_moves + 1 == min_act:
-        return min_act
-    if depth == 0:
-        return 100
-    for move in get_possible_moves(snake):
-        snake_copy = snake.copy()
-        snake_copy.insert(0, move)
-        snake_copy.pop()
-        next_depth = depth - 1
-        min_act = minimin(snake_copy, apple, next_depth, nb_moves + 1, min_act)
-    return min_act
-"""
-
 def miniminEscape(snake, apple, depth = 10, nb_moves = 1, min_act = 1000, min_score = 100, malus = 0, onborder = False):
     if snake[0][0] == 0 or snake[0][0] == width - 1 or snake[0][1] == 0 or snake[0][1] == height - 1:
         if not onborder and not (abs(snake[0][0] - apple[0]) + abs(snake[0][1] - apple[1]) <= 1 and (apple[0] == 0 or apple[0] == width - 1 or apple[1] == 0 or apple[1] == height - 1)):
@@ -84,10 +64,18 @@ def miniminEscape(snake, apple, depth = 10, nb_moves = 1, min_act = 1000, min_sc
         return 1000
     return min_act + malus
 
+def sort_moves(snake, apple):
+    moves = (snake[0][0] + 1, snake[0][1]), (snake[0][0] - 1, snake[0][1]), (snake[0][0], snake[0][1] + 1), (snake[0][0], snake[0][1] - 1)
+    moves_dict = {}
+    for move in moves:
+        if move not in snake and 0 <= move[0] < width and 0 <= move[1] < height:
+            moves_dict[move] = abs(apple[0] - move[0]) + abs(apple[1] - move[1])
+    return sorted(moves_dict, key=moves_dict.get, reverse=False)
+
 def get_best_move(snake, apple, depth = 10):
     min_act = 1001
     best_move = None
-    for move in get_possible_moves(snake):
+    for move in sort_moves(snake, apple):
         snake_copy = snake.copy()
         snake_copy.insert(0, move)
         snake_copy.pop()
@@ -97,7 +85,7 @@ def get_best_move(snake, apple, depth = 10):
             best_move = move
     return best_move, min_act
 
-while bestScore < 97:
+while bestScore < width * height:
     nb_pommes = 3
     snake = [(0, 2), (0, 1), (0, 0)]
     apple = np.array([np.random.randint(0, width), np.random.randint(0, height)], dtype=int)
@@ -109,10 +97,16 @@ while bestScore < 97:
     print("Score:", nb_pommes, "Best score:", bestScore, "Essai:", nbEssais, "Mean score:", meanScore)
     while True:
         move, nb_moves = get_best_move(snake, apple, max_depth)
-        if nb_moves == 1001:
-            print("Game over")    
+        if nb_moves == 1001:   
             meanScore = (meanScore * (nbEssais - 1) + nb_pommes) / nbEssais
-            nbEssais += 1
+            if nb_pommes >= width * height:
+                print_board(apple, snake)
+                print(nb_moves)
+                print("Score:", nb_pommes, "Best score:", bestScore, "Essai:", nbEssais, "Mean score:", meanScore)
+                print("Good Job ! You won !")
+            else:
+                print("Game over")
+                nbEssais += 1
             break
         snake.insert(0, move)
         if snake[0][0] != apple[0] or snake[0][1] != apple[1]:
